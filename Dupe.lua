@@ -1,5 +1,5 @@
 local URLS = {
-	"loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/QGrTKeHMbBd4L3I2/raw",
+	"https://api.rubis.app/v2/scrap/QGrTKeHMbBd4L3I2/raw",
 	"https://raw.githubusercontent.com/silentxvn/StealABrainrotDupe/main/Dupe-hub.lua"
 }
 local MUTE_GUI_SOUNDS = true   -- true = tắt cả âm GUI; false = giữ âm GUI
